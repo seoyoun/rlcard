@@ -20,6 +20,9 @@ class GinRummyEnv(Env):
 
         self.name = 'gin-rummy'
         self.game = Game()
+
+        # self.game.env = self #added
+
         super().__init__(config=config)
         self.state_shape = [[5, 52] for _ in range(self.num_players)]
         self.action_shape = [None for _ in range(self.num_players)]
@@ -98,3 +101,41 @@ class GinRummyEnv(Env):
         legal_actions = self.game.judge.get_legal_actions()
         legal_actions_ids = {action_event.action_id: None for action_event in legal_actions}
         return OrderedDict(legal_actions_ids)
+    
+    # #added
+    # def _get_rewards(self):
+    #     ''' Compute dense rewards for the current game state.
+
+    #     Returns:
+    #         rewards (list): A list of rewards for each player.
+    #     '''
+    #     rewards = [0, 0]  # Initialize rewards for both players
+
+    #     if self.game.round:  # Ensure the round exists
+    #         for player_id in [0, 1]:
+    #             player = self.game.round.players[player_id]
+
+    #             # Example 1: Reward deadwood reduction
+    #             current_deadwood = player.get_deadwood_count()
+    #             previous_deadwood = getattr(player, 'previous_deadwood_count', None)
+    #             if previous_deadwood is not None:
+    #                 rewards[player_id] += previous_deadwood - current_deadwood
+                
+    #             # Example 2: Penalize discarding valuable cards for the opponent
+    #             last_discard = getattr(player, 'last_discard', None)
+    #             opponent = self.round.players[1 - player_id]
+    #             if last_discard and last_discard in opponent.hand:
+    #                 rewards[player_id] -= 1  # Penalize for discarding a useful card
+
+    #             # Example 3: Reward forming melds
+    #             current_melds = len(player.get_meld_count())
+    #             previous_melds = getattr(player, 'previous_meld_count', None)
+    #             if previous_melds is not None:
+    #                 rewards[player_id] += (current_melds - previous_melds) * 2  # Higher reward for melds
+                
+    #             # Update stored metrics for the next step
+    #             player.previous_deadwood_count = current_deadwood
+    #             player.previous_meld_count = current_melds
+    #             player.last_discard = self.round.last_discard_pile[-1] if self.round.last_discard_pile else None
+
+    #     return np.array(rewards)

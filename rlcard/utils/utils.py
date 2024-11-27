@@ -170,7 +170,8 @@ def reorganize(trajectories, payoffs):
                 reward = payoffs[player]
                 done =True
             else:
-                reward, done = 0, False
+                reward = 0
+                done = False
             transition = trajectories[player][i:i+3].copy()
             transition.insert(2, reward)
             transition.append(done)

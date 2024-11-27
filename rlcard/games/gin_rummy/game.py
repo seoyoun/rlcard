@@ -71,7 +71,92 @@ class GinRummyGame:
         self.actions.append(action)
         next_player_id = self.round.current_player_id
         next_state = self.get_state(player_id=next_player_id)
-        return next_state, next_player_id
+        
+        # added 
+        reward = self._get_reward(self.round.current_player_id)
+
+        return next_state, next_player_id, reward
+
+
+
+    def _get_reward(self, player_id):
+        """
+        Calculate dense rewards based on the change in deadwood count and meld formations.
+        
+        Args:
+            player_id (int): The player ID.
+            previous_deadwood_count (int): The deadwood count before the last action.
+            current_deadwood_count (int): The deadwood count after the last action.
+            melds_formed (bool): Whether the player formed a meld during the action.
+
+        Returns:
+            float: The reward for the player.
+        """
+        player = self.round.players[player_id]
+
+        reward = 0.0
+
+        current_deadwood_count = player.get_deadwood_count()
+        previous_deadwood_count = player.get_previous_deadwood_count()
+        current_melds = player.get_meld_count()
+        previous_melds = player.get_previous_meld_count()
+
+        # Reward for decreasing deadwood
+        if current_deadwood_count < previous_deadwood_count:
+            reward += 0.1  # Small reward for reducing deadwood
+
+        # Penalize for increasing deadwood
+        elif current_deadwood_count > previous_deadwood_count:
+            reward -= 0.1  # Small penalty for increasing deadwood
+
+        # Reward for forming a meld (either set or run)
+        if current_melds > previous_melds:
+            reward += 0.2  # Reward for forming a meld (you can adjust this value)
+
+        return reward
+
+
+    # #added
+    # def _get_rewards(self):
+    #     ''' Compute dense rewards for the current game state.
+
+    #     Returns:
+    #         rewards (list): A list of rewards for each player.
+    #     '''
+    #     rewards = [0, 0]  # Initialize rewards for both players
+
+    #     if self.round:  # Ensure the round exists
+    #         for player_id in [0, 1]:
+    #             player = self.round.players[player_id]
+
+    #             # Example 1: Reward deadwood reduction
+    #             current_deadwood = player.get_deadwood_count()
+    #             previous_deadwood = getattr(player, 'previous_deadwood_count', None)
+    #             if previous_deadwood is not None:
+    #                 rewards[player_id] += previous_deadwood - current_deadwood
+                
+    #             # Example 2: Penalize discarding valuable cards for the opponent
+    #             last_discard = getattr(player, 'last_discard', None)
+    #             opponent = self.round.players[1 - player_id]
+    #             if last_discard and last_discard in opponent.hand:
+    #                 rewards[player_id] -= 1  # Penalize for discarding a useful card
+
+    #             # Example 3: Reward forming melds
+    #             current_melds = player.get_meld_count()
+    #             previous_melds = getattr(player, 'previous_meld_count', None)
+    #             if previous_melds is not None:
+    #                 rewards[player_id] += (current_melds - previous_melds) * 2  # Higher reward for melds
+                
+    #             # Update stored metrics for the next step
+    #             player.previous_deadwood_count = current_deadwood
+    #             player.previous_meld_count = current_melds
+    #             player.last_discard = self.round.last_discard_pile[-1] if self.round.last_discard_pile else None
+
+    #     return np.array(rewards)
+
+
+
+
 
     def step_back(self):
         ''' Takes one step backward and restore to the last state

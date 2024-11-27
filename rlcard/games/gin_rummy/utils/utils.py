@@ -73,16 +73,16 @@ def get_deadwood_value(card: Card) -> int:
 
 
 def get_deadwood(hand: Iterable[Card], meld_cluster: List[Iterable[Card]]) -> List[Card]:
-    if len(list(hand)) != 10:
-        raise GinRummyProgramError("Hand contain {} cards: should be 10 cards.".format(len(list(hand))))
+    # if len(list(hand)) != 10:
+    #     raise GinRummyProgramError("Hand contain {} cards: should be 10 cards.".format(len(list(hand))))
     meld_cards = [card for meld_pile in meld_cluster for card in meld_pile]
     deadwood = [card for card in hand if card not in meld_cards]
     return deadwood
 
 
 def get_deadwood_count(hand: List[Card], meld_cluster: List[Iterable[Card]]) -> int:
-    if len(hand) != 10:
-        raise GinRummyProgramError("Hand contain {} cards: should be 10 cards.".format(len(hand)))
+    # if len(hand) != 10:
+    #     raise GinRummyProgramError("Hand contain {} cards: should be 10 cards.".format(len(hand)))
     deadwood = get_deadwood(hand=hand, meld_cluster=meld_cluster)
     deadwood_values = [get_deadwood_value(card) for card in deadwood]
     return sum(deadwood_values)

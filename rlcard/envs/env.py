@@ -81,9 +81,12 @@ class Env(object):
         self.timestep += 1
         # Record the action for human interface
         self.action_recorder.append((self.get_player_id(), action))
-        next_state, player_id = self.game.step(action)
 
-        return self._extract_state(next_state), player_id
+        # next_state, player_id = self.game.step(action)
+        next_state, player_id, reward = self.game.step(action)
+
+        # return self._extract_state(next_state), player_id
+        return self._extract_state(next_state), player_id, reward
 
     def step_back(self):
         ''' Take one step backward.
@@ -146,7 +149,9 @@ class Env(object):
                 action = self.agents[player_id].step(state)
 
             # Environment steps
-            next_state, next_player_id = self.step(action, self.agents[player_id].use_raw)
+            # next_state, next_player_id = self.step(action, self.agents[player_id].use_raw)
+            next_state, next_player_id, reward = self.step(action, self.agents[player_id].use_raw)
+            
             # Save action
             trajectories[player_id].append(action)
 
@@ -157,6 +162,9 @@ class Env(object):
             # Save state.
             if not self.game.is_over():
                 trajectories[player_id].append(state)
+            
+            #added    
+            trajectories[player_id].append(reward) 
 
         # Add a final state to all the players
         for player_id in range(self.num_players):
