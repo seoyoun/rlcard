@@ -167,13 +167,13 @@ def reorganize(trajectories, payoffs):
     for player in range(num_players):
         for i in range(0, len(trajectories[player])-2, 2):
             if i ==len(trajectories[player])-3:
-                reward = payoffs[player]
+                # reward = payoffs[player][i]
                 done =True
             else:
-                reward = 0
+                # reward = 0
                 done = False
             transition = trajectories[player][i:i+3].copy()
-            transition.insert(2, reward)
+            transition.insert(2, payoffs[player][int(i/2)])
             transition.append(done)
 
             new_trajectories[player].append(transition)
@@ -208,22 +208,25 @@ def tournament(env, num):
     Returns:
         A list of avrage payoffs for each player
     '''
-    payoffs = [0 for _ in range(env.num_players)]
-    counter = 0
-    while counter < num:
-        _, _payoffs = env.run(is_training=False)
-        if isinstance(_payoffs, list):
-            for _p in _payoffs:
-                for i, _ in enumerate(payoffs):
-                    payoffs[i] += _p[i]
-                counter += 1
-        else:
-            for i, _ in enumerate(payoffs):
-                payoffs[i] += _payoffs[i]
-            counter += 1
-    for i, _ in enumerate(payoffs):
-        payoffs[i] /= counter
-    return payoffs
+    # payoffs = [0 for _ in range(env.num_players)]
+    # counter = 0
+    # while counter < num:
+    #     _, _payoffs = env.run(is_training=False)
+    #     if isinstance(_payoffs, list):
+    #         for _p in _payoffs:
+    #             for i, _ in enumerate(payoffs):
+    #                 payoffs[i] += _p[i]
+    #             counter += 1
+    #     else:
+    #         for i, _ in enumerate(payoffs):
+    #             payoffs[i] += _payoffs[i]
+    #         counter += 1
+    # for i, _ in enumerate(payoffs):
+    #     payoffs[i] /= counter
+
+    _, _payoffs = env.run(is_training=False)
+    
+    return [np.mean(_payoffs[0]),np.mean(_payoffs[1])]
 
 def plot_curve(csv_path, save_path, algorithm):
     ''' Read data from csv file and plot the results

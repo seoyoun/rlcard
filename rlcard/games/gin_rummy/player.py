@@ -119,6 +119,7 @@ class GinRummyPlayer:
     def add_card_to_hand(self, card: Card):
         #added
         self.update_deadwood_count() 
+        self.update_meld_count()
 
         self.hand.append(card)
         self._increase_meld_kinds_by_rank_id(card=card)
@@ -128,7 +129,8 @@ class GinRummyPlayer:
     def remove_card_from_hand(self, card: Card):
         #added
         self.update_deadwood_count() 
-        
+        self.update_meld_count()
+            
         self.hand.remove(card)
         self._reduce_meld_kinds_by_rank_id(card=card)
         self._reduce_run_kinds_by_suit_id(card=card)

@@ -50,21 +50,30 @@ class GinRummyGame:
     def step(self, action: ActionEvent):
         ''' Perform game action and return next player number, and the state for next player
         '''
+        bonus_reward = 0
         if isinstance(action, ScoreNorthPlayerAction):
             self.round.score_player_0(action)
         elif isinstance(action, ScoreSouthPlayerAction):
             self.round.score_player_1(action)
+
+
         elif isinstance(action, DrawCardAction):
             self.round.draw_card(action)
         elif isinstance(action, PickUpDiscardAction):
             self.round.pick_up_discard(action)
-        elif isinstance(action, DeclareDeadHandAction):
-            self.round.declare_dead_hand(action)
-        elif isinstance(action, GinAction):
-            self.round.gin(action, going_out_deadwood_count=self.settings.going_out_deadwood_count)
+
+
         elif isinstance(action, DiscardAction):
             self.round.discard(action)
+
+        elif isinstance(action, DeclareDeadHandAction):
+            self.round.declare_dead_hand(action)
+            bonus_reward -= 1
+        elif isinstance(action, GinAction):
+            bonus_reward += 1
+            self.round.gin(action, going_out_deadwood_count=self.settings.going_out_deadwood_count)
         elif isinstance(action, KnockAction):
+            bonus_reward += 1
             self.round.knock(action)
         else:
             raise Exception('Unknown step action={}'.format(action))
@@ -74,6 +83,7 @@ class GinRummyGame:
         
         # added 
         reward = self._get_reward(self.round.current_player_id)
+        reward += bonus_reward
 
         return next_state, next_player_id, reward
 
@@ -105,13 +115,21 @@ class GinRummyGame:
         if current_deadwood_count < previous_deadwood_count:
             reward += 0.1  # Small reward for reducing deadwood
 
-        # Penalize for increasing deadwood
-        elif current_deadwood_count > previous_deadwood_count:
-            reward -= 0.1  # Small penalty for increasing deadwood
+        # # Penalize for increasing deadwood
+        # elif current_deadwood_count > previous_deadwood_count:
+        #     reward -= 0.1  # Small penalty for increasing deadwood
 
         # Reward for forming a meld (either set or run)
         if current_melds > previous_melds:
-            reward += 0.2  # Reward for forming a meld (you can adjust this value)
+            reward += 0.3  # Reward for forming a meld (you can adjust this value)
+
+        # # reward for knock
+        # if action == 5:
+        #     reward += 1
+
+        # if action in range(58,110):
+        #     reward += 0.8
+
 
         return reward
 

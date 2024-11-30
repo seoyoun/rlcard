@@ -84,7 +84,7 @@ class Env(object):
 
         # next_state, player_id = self.game.step(action)
         next_state, player_id, reward = self.game.step(action)
-
+        # print(next_state, player_id, reward)
         # return self._extract_state(next_state), player_id
         return self._extract_state(next_state), player_id, reward
 
@@ -137,6 +137,7 @@ class Env(object):
               The second dimension is for different transitions. The third dimension is for the contents of each transiton
         '''
         trajectories = [[] for _ in range(self.num_players)]
+        payoffs = [[] for _ in range(self.num_players)]
         state, player_id = self.reset()
 
         # Loop to play the game
@@ -152,6 +153,7 @@ class Env(object):
             # next_state, next_player_id = self.step(action, self.agents[player_id].use_raw)
             next_state, next_player_id, reward = self.step(action, self.agents[player_id].use_raw)
             
+            payoffs[player_id].append(reward)
             # Save action
             trajectories[player_id].append(action)
 
@@ -164,16 +166,16 @@ class Env(object):
                 trajectories[player_id].append(state)
             
             #added    
-            trajectories[player_id].append(reward) 
+            # trajectories[player_id].append(reward) 
 
         # Add a final state to all the players
         for player_id in range(self.num_players):
             state = self.get_state(player_id)
             trajectories[player_id].append(state)
 
-        # Payoffs
-        payoffs = self.get_payoffs()
-
+        # # Payoffs
+        # payoffs = self.get_payoffs()
+        # payoffs += reward
         return trajectories, payoffs
 
     def is_over(self):

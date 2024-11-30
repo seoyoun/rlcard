@@ -75,7 +75,9 @@ def train(args):
 
             # Generate data from the environment
             trajectories, payoffs = env.run(is_training=True)
-
+            # print(trajectories[0])
+            print(len(payoffs[1]), len(payoffs[0]))
+            print(len(trajectories[1]),len(trajectories[0]))
             # Reorganaize the data to be state, action, reward, next_state, done
             trajectories = reorganize(trajectories, payoffs)
 
