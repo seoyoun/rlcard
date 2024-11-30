@@ -148,7 +148,8 @@ class Env(object):
                 action, _ = self.agents[player_id].eval_step(state)
             else:
                 action = self.agents[player_id].step(state)
-
+            # print("  ")
+            # print(player_id, action)
             # Environment steps
             # next_state, next_player_id = self.step(action, self.agents[player_id].use_raw)
             next_state, next_player_id, reward = self.step(action, self.agents[player_id].use_raw)

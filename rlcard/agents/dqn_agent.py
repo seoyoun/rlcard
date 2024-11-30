@@ -50,13 +50,13 @@ class DQNAgent(object):
                  discount_factor=0.99,
                  epsilon_start=1.0,
                  epsilon_end=0.1,
-                 epsilon_decay_steps=20000,
+                 epsilon_decay_steps=10000, # original 20000
                  batch_size=32,
                  num_actions=2,
                  state_shape=None,
-                 train_every=1,
+                 train_every=4, #original 1
                  mlp_layers=None,
-                 learning_rate=0.00005,
+                 learning_rate=0.0001, #original 0.00005
                  device=None,
                  save_path=None,
                  save_every=float('inf'),):
@@ -481,7 +481,7 @@ class EstimatorNetwork(nn.Module):
         fc.append(nn.BatchNorm1d(layer_dims[0]))
         for i in range(len(layer_dims)-1):
             fc.append(nn.Linear(layer_dims[i], layer_dims[i+1], bias=True))
-            fc.append(nn.Tanh())
+            fc.append(nn.ReLU()) # change to relu 
         fc.append(nn.Linear(layer_dims[-1], self.num_actions, bias=True))
         self.fc_layers = nn.Sequential(*fc)
 

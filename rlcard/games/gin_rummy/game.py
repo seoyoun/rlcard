@@ -51,6 +51,7 @@ class GinRummyGame:
         ''' Perform game action and return next player number, and the state for next player
         '''
         bonus_reward = 0
+        current_player = self.round.current_player_id
         if isinstance(action, ScoreNorthPlayerAction):
             self.round.score_player_0(action)
         elif isinstance(action, ScoreSouthPlayerAction):
@@ -59,32 +60,41 @@ class GinRummyGame:
 
         elif isinstance(action, DrawCardAction):
             self.round.draw_card(action)
+            # print("draw card")
         elif isinstance(action, PickUpDiscardAction):
             self.round.pick_up_discard(action)
+            # print("draw card - known")
 
 
         elif isinstance(action, DiscardAction):
             self.round.discard(action)
+            # print("discard")
+            bonus_reward += self._get_reward_dw(current_player)
 
         elif isinstance(action, DeclareDeadHandAction):
             self.round.declare_dead_hand(action)
             bonus_reward -= 1
         elif isinstance(action, GinAction):
             bonus_reward += 1
+            # print("GIN")
             self.round.gin(action, going_out_deadwood_count=self.settings.going_out_deadwood_count)
         elif isinstance(action, KnockAction):
             bonus_reward += 1
+            # print("Knock")
             self.round.knock(action)
         else:
             raise Exception('Unknown step action={}'.format(action))
         self.actions.append(action)
         next_player_id = self.round.current_player_id
         next_state = self.get_state(player_id=next_player_id)
-        
-        # added 
-        reward = self._get_reward(self.round.current_player_id)
-        reward += bonus_reward
 
+        # added 
+        # reward = self._get_reward(current_player)
+
+        reward = self._get_reward_melds(current_player)
+        # print("meld reward: ", reward, "bonus:", bonus_reward)
+        reward += bonus_reward
+        # print("total reward: ", reward)
         return next_state, next_player_id, reward
 
 
@@ -111,9 +121,9 @@ class GinRummyGame:
         current_melds = player.get_meld_count()
         previous_melds = player.get_previous_meld_count()
 
-        # Reward for decreasing deadwood
-        if current_deadwood_count < previous_deadwood_count:
-            reward += 0.1  # Small reward for reducing deadwood
+        # # Reward for decreasing deadwood
+        # if current_deadwood_count < previous_deadwood_count:
+        #     reward += 0.1  # Small reward for reducing deadwood
 
         # # Penalize for increasing deadwood
         # elif current_deadwood_count > previous_deadwood_count:
@@ -123,16 +133,41 @@ class GinRummyGame:
         if current_melds > previous_melds:
             reward += 0.3  # Reward for forming a meld (you can adjust this value)
 
-        # # reward for knock
-        # if action == 5:
-        #     reward += 1
-
-        # if action in range(58,110):
-        #     reward += 0.8
 
 
         return reward
 
+    # melds reward, draw & discard
+    def _get_reward_melds(self, player_id):
+        """
+        reward for forming a meld: 
+        punish for breaking a meld:
+        """
+        player = self.round.players[player_id]
+
+        
+        current_melds = player.get_meld_count()
+        previous_melds = player.get_previous_meld_count()
+        if current_melds > previous_melds:
+            reward = 0.3
+        elif current_melds == previous_melds:
+            reward = 0
+        else:
+            reward = -0.3
+        return reward
+    
+    # deadwood reward, use in discard
+    def _get_reward_dw(self, player_id):
+        player = self.round.players[player_id]
+
+        reward = 0.0
+
+        current_deadwood_count = player.get_deadwood_count()
+        previous_deadwood_count = player.get_previous_deadwood_count()
+        # print(previous_deadwood_count,current_deadwood_count)
+        reward = (previous_deadwood_count - current_deadwood_count)/100
+        return reward
+    
 
     # #added
     # def _get_rewards(self):

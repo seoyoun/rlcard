@@ -30,14 +30,17 @@ class GinRummyPlayer:
         self.meld_run_by_suit_id = [[] for _ in range(4)]  # type: List[List[List[Card]]]
 
         # added - New attributes for tracking the player's previous state
+        self.previous_previous_deadwood_count = 0
         self.previous_deadwood_count = 0  # Deadwood count from the previous step
         self.previous_meld_count = 0  # Number of melds from the previous step
         # self.last_discard = 0  # Last discarded card by the player
-    
+
     #added
     def update_deadwood_count(self):
         ''' Update the previous deadwood count based on the current hand. '''
+        # self.previous_previous_deadwood_count = self.previous_deadwood_count
         self.previous_deadwood_count = utils.get_deadwood_count(self.hand, melding.get_best_meld_clusters(self.hand))
+        
     #added
     def update_meld_count(self):
         ''' Update the previous meld count based on the current meld pile. '''
@@ -54,6 +57,10 @@ class GinRummyPlayer:
     def get_previous_deadwood_count(self):
         ''' Get the previous deadwood count. '''
         return self.previous_deadwood_count
+    #added 
+    def get_previous_previous_deadwood_count(self):
+        ''' Get the previous deadwood count. '''
+        return self.previous_previous_deadwood_count
     #added
     def get_previous_meld_count(self):
         ''' Get the previous meld count. '''
@@ -122,6 +129,7 @@ class GinRummyPlayer:
         self.update_meld_count()
 
         self.hand.append(card)
+
         self._increase_meld_kinds_by_rank_id(card=card)
         self._increase_run_kinds_by_suit_id(card=card)
 
@@ -130,8 +138,9 @@ class GinRummyPlayer:
         #added
         self.update_deadwood_count() 
         self.update_meld_count()
-            
+        
         self.hand.remove(card)
+
         self._reduce_meld_kinds_by_rank_id(card=card)
         self._reduce_run_kinds_by_suit_id(card=card)
         self.set_last_discard(card) #added
