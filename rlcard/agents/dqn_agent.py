@@ -356,6 +356,7 @@ class Estimator(object):
 
         # set up Q model and place it in eval mode
         qnet = EstimatorNetwork(num_actions, state_shape, mlp_layers)
+
         qnet = qnet.to(self.device)
         self.qnet = qnet
         self.qnet.eval()
@@ -456,42 +457,137 @@ class Estimator(object):
         return estimator
 
 
-class EstimatorNetwork(nn.Module):
-    ''' The function approximation network for Estimator
-        It is just a series of tanh layers. All in/out are torch.tensor
-    '''
+# class EstimatorNetwork(nn.Module):
+#     ''' The function approximation network for Estimator
+#         It is just a series of tanh layers. All in/out are torch.tensor
+#     '''
 
-    def __init__(self, num_actions=2, state_shape=None, mlp_layers=None):
-        ''' Initialize the Q network
+#     def __init__(self, num_actions=2, state_shape=None, mlp_layers=None):
+#         ''' Initialize the Q network
+
+#         Args:
+#             num_actions (int): number of legal actions
+#             state_shape (list): shape of state tensor
+#             mlp_layers (list): output size of each fc layer
+#         '''
+#         super(EstimatorNetwork, self).__init__()
+
+#         self.num_actions = num_actions
+#         self.state_shape = state_shape
+#         self.mlp_layers = mlp_layers
+
+#         # build the Q network
+#         layer_dims = [np.prod(self.state_shape)] + self.mlp_layers
+#         fc = [nn.Flatten()]
+#         fc.append(nn.BatchNorm1d(layer_dims[0]))
+#         for i in range(len(layer_dims)-1):
+#             fc.append(nn.Linear(layer_dims[i], layer_dims[i+1], bias=True))
+#             fc.append(nn.ReLU()) # change to relu 
+#         fc.append(nn.Linear(layer_dims[-1], self.num_actions, bias=True))
+#         self.fc_layers = nn.Sequential(*fc)
+
+#     def forward(self, s):
+#         ''' Predict action values
+
+#         Args:
+#             s  (Tensor): (batch, state_shape)
+#         '''
+#         return self.fc_layers(s)
+
+
+
+
+
+
+
+class EstimatorNetwork(nn.Module):
+    def __init__(self, num_actions=2, state_shape=None, mlp_layers=None, d_model=128, nhead=4, num_transformer_layers=2):
+        """
+        DQN with Transformer Encoder for feature extraction.
 
         Args:
-            num_actions (int): number of legal actions
-            state_shape (list): shape of state tensor
-            mlp_layers (list): output size of each fc layer
-        '''
+            num_actions (int): Number of actions in the environment.
+            state_shape (tuple): Shape of the input state.
+            mlp_layers (list): Sizes of the fully connected layers.
+            d_model (int): Dimension of the Transformer Encoder's input and output.
+            nhead (int): Number of attention heads in the Transformer.
+            num_transformer_layers (int): Number of Transformer Encoder layers.
+        """
         super(EstimatorNetwork, self).__init__()
 
         self.num_actions = num_actions
         self.state_shape = state_shape
         self.mlp_layers = mlp_layers
 
-        # build the Q network
-        layer_dims = [np.prod(self.state_shape)] + self.mlp_layers
-        fc = [nn.Flatten()]
-        fc.append(nn.BatchNorm1d(layer_dims[0]))
-        for i in range(len(layer_dims)-1):
-            fc.append(nn.Linear(layer_dims[i], layer_dims[i+1], bias=True))
-            fc.append(nn.ReLU()) # change to relu 
-        fc.append(nn.Linear(layer_dims[-1], self.num_actions, bias=True))
-        self.fc_layers = nn.Sequential(*fc)
+        # Flatten the state for input to Transformer
+        input_dim = np.prod(state_shape)
 
-    def forward(self, s):
-        ''' Predict action values
+        # Input embedding to match Transformer model dimensions
+        self.embedding = nn.Linear(input_dim, d_model)
+
+        # Transformer Encoder
+        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=4 * d_model)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_transformer_layers)
+
+        # Fully connected layers
+        fc_layers = [nn.Linear(d_model, mlp_layers[0]), nn.ReLU()]
+        for i in range(len(mlp_layers) - 1):
+            fc_layers.append(nn.Linear(mlp_layers[i], mlp_layers[i + 1]))
+            fc_layers.append(nn.ReLU())
+        fc_layers.append(nn.Linear(mlp_layers[-1], num_actions))
+        self.fc_layers = nn.Sequential(*fc_layers)
+
+    def forward(self, x):
+        """
+        Forward pass for DQN with Transformer.
 
         Args:
-            s  (Tensor): (batch, state_shape)
-        '''
-        return self.fc_layers(s)
+            x (torch.Tensor): Input state tensor of shape (batch_size, *state_shape).
+
+        Returns:
+            torch.Tensor: Q-values for each action.
+        """
+        batch_size = x.size(0)
+
+        # Flatten input state and embed
+        x = x.view(batch_size, -1)  # Flatten state
+        x = self.embedding(x)       # Linear projection
+
+        # Transformer expects input shape: (seq_len, batch_size, d_model)
+        x = x.unsqueeze(0)          # Add sequence length dimension
+
+        # Apply Transformer Encoder
+        x = self.transformer_encoder(x)  # (seq_len=1, batch_size, d_model)
+        x = x.squeeze(0)                # Remove sequence length dimension
+
+        # Fully connected layers
+        x = self.fc_layers(x)
+
+        return x
+
+
+
+
+
+# class TransformerDQNAgent(DQNAgent):
+#     def __init__(self, state_shape, num_actions, **kwargs):
+#         if state_shape is None:
+#             raise ValueError("state_shape cannot be None. Ensure the environment provides it.")
+
+#         super().__init__(**kwargs)
+
+#         # Replace the Q-network with TransformerDQN
+#         self.q_estimator.qnet = TransformerDQN(
+#             num_actions=num_actions,
+#             state_shape=state_shape,
+#             mlp_layers=kwargs.get('mlp_layers', [128, 128]),
+#             d_model=128,
+#             nhead=4,
+#             num_transformer_layers=2
+#         ).to(self.device)
+
+#         self.target_estimator.qnet = deepcopy(self.q_estimator.qnet)
+
 
 class Memory(object):
     ''' Memory for saving transitions

@@ -1,5 +1,6 @@
 import rlcard
 from rlcard.agents import DQNAgent, RandomAgent
+# from rlcard.agents.dqn_agent import TransformerDQNAgent
 from rlcard.utils import set_seed, tournament, reorganize, Logger, plot_curve
 import time
 # from rlcard.envs.dense_reward_gin_rummy import GinRummyDenseRewardEnv  # Import your custom environment
@@ -29,24 +30,33 @@ def train_dqn():
     env = rlcard.make('gin-rummy')
     set_seed(42)
 
-    agent = DQNAgent(
-        num_actions=env.num_actions,
-        state_shape=env.state_shape[0],
-        mlp_layers=[256, 256, 128],
-    )
+    # agent = DQNAgent(
+    #     num_actions=env.num_actions,
+    #     state_shape=env.state_shape[0],
+    #     mlp_layers=[256, 256, 128],
+    # )
+
+    # agent = TransformerDQNAgent(
+    #     state_shape=env.state_shape[0],
+    #     num_actions=env.num_actions,
+    #     replay_memory_size=20000,
+    #     replay_memory_init_size=1000,
+    #     train_every=1,
+    #     mlp_layers=[128, 128]
+    # )
     rule_agent = GinRummyNoviceRuleAgent()
     # env.set_agents([agent, RandomAgent(num_actions=env.num_actions)])
-    # env.set_agents([rule_agent, RandomAgent(num_actions=env.num_actions)])
-    env.set_agents([rule_agent, agent])
+    env.set_agents([rule_agent, RandomAgent(num_actions=env.num_actions)])
+    # env.set_agents([rule_agent, agent])
 
     logger = Logger('./experiments/gin_rummy_dqn_dense/')
-    for episode in range(5000):
-        trajectories, payoffs = env.run(is_training=True)
-        trajectories = reorganize(trajectories, payoffs)
-        for ts in trajectories[0]:
-            # state, action, reward, next_state, done = ts
-            # print(action, reward)
-            agent.feed(ts)
+    for episode in range(20000):
+        # trajectories, payoffs = env.run(is_training=True)
+        # trajectories = reorganize(trajectories, payoffs)
+        # for ts in trajectories[0]:
+        #     # state, action, reward, next_state, done = ts
+        #     # print(action, reward)
+        #     agent.feed(ts)
 
         # if episode <1000:
         #     for ts in trajectories[0]:
