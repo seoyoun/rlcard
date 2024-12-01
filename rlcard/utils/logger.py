@@ -16,6 +16,7 @@ class Logger:
         self.file.flush()  # Ensure data is written to disk
 
     def close(self):
+        # print("close----logger-----")
         self.file.close()
 
 

@@ -5,6 +5,7 @@ import time
 # from rlcard.envs.dense_reward_gin_rummy import GinRummyDenseRewardEnv  # Import your custom environment
 
 from rlcard.models.gin_rummy_rule_models import GinRummyNoviceRuleAgent
+import torch
 
 # import os
 # import csv
@@ -24,23 +25,29 @@ from rlcard.models.gin_rummy_rule_models import GinRummyNoviceRuleAgent
 #         writer.writerow({'episode': episode, 'reward': reward})
 
 
-def train_dqn():
+def train_dqn(check_point_path=None, load=False):
     # Use the custom dense reward environment
     env = rlcard.make('gin-rummy')
     set_seed(42)
 
-    agent = DQNAgent(
-        num_actions=env.num_actions,
-        state_shape=env.state_shape[0],
-        mlp_layers=[256, 256, 128],
-    )
+    if load:
+        agent = load_checkpoint(DQNAgent, check_point_path+"/checkpoint_dqn.pt")
+        print("--------load-----------")
+    else:
+        agent = DQNAgent(
+            num_actions=env.num_actions,
+            state_shape=env.state_shape[0],
+            mlp_layers=[256, 256, 128],
+            save_path=check_point_path,
+            save_every=100 #step
+        )
     rule_agent = GinRummyNoviceRuleAgent()
     # env.set_agents([agent, RandomAgent(num_actions=env.num_actions)])
     # env.set_agents([rule_agent, RandomAgent(num_actions=env.num_actions)])
     env.set_agents([rule_agent, agent])
 
     logger = Logger('./experiments/gin_rummy_dqn_dense/')
-    for episode in range(5000):
+    for episode in range(100):
         trajectories, payoffs = env.run(is_training=True)
         trajectories = reorganize(trajectories, payoffs)
         for ts in trajectories[0]:
@@ -48,7 +55,7 @@ def train_dqn():
             # print(action, reward)
             agent.feed(ts)
 
-        # if episode <1000:
+        # if episode <5000:
         #     for ts in trajectories[0]:
         #         # state, action, reward, next_state, done = ts
         #         # print(action, reward)
@@ -73,9 +80,21 @@ def train_dqn():
     logger.close()
     plot_curve(logger.csv_path, logger.fig_path, 'DQN')
 
+# Function to load the checkpoint
+def load_checkpoint(agent_class, checkpoint_path='checkpoint_dqn.pt'):
+        checkpoint = torch.load(checkpoint_path)
+        agent = agent_class.from_checkpoint(checkpoint) # Restore agent state
+        print("Checkpoint loaded from", checkpoint_path)
+        return agent
+
+
+
+
 if __name__ == '__main__':
+    check_point_path = "./dqn"
+
     start_time = time.time()
-    train_dqn()
+    train_dqn(check_point_path, load = True)
     end_time = time.time()
     elapsed_time= end_time-start_time
     print(f"Elapsed time: {elapsed_time:.2f} seconds")

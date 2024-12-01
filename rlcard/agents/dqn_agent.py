@@ -54,11 +54,11 @@ class DQNAgent(object):
                  batch_size=32,
                  num_actions=2,
                  state_shape=None,
-                 train_every=4, #original 1
+                 train_every=1, #original 1
                  mlp_layers=None,
                  learning_rate=0.0001, #original 0.00005
                  device=None,
-                 save_path=None,
+                 save_path='./dqn/',
                  save_every=float('inf'),):
 
         '''
