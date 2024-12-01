@@ -73,7 +73,74 @@ class PPOAgent:
 
         return action, log_prob, value.item()
 
-    def train(self, trajectories, epochs=10):
+    def train(self, buffer, batch_size=64, epochs=10):
+        """
+        Train the agent using the accumulated buffer.
+
+        Args:
+            buffer (list): List of transitions collected from multiple trajectories.
+            batch_size (int): Number of transitions per batch.
+            epochs (int): Number of epochs for PPO updates.
+        """
+        # Extract data from the buffer
+        states, actions, rewards, log_probs, values, dones = zip(*buffer)
+        states = torch.FloatTensor(np.vstack(states))
+        actions = torch.LongTensor(actions).unsqueeze(1)
+        log_probs = torch.FloatTensor(log_probs)
+        values = torch.FloatTensor(values)
+        dones = np.array(dones, dtype=bool)
+
+        # Compute advantages and returns
+        advantages = compute_advantages(rewards, values, dones, self.gamma, self.lam)
+        returns = advantages + values
+
+        # Train using mini-batches
+        num_samples = len(states)
+        indices = np.arange(num_samples)
+        for _ in range(epochs):
+            np.random.shuffle(indices)
+            for start in range(0, num_samples, batch_size):
+                end = start + batch_size
+                batch_indices = indices[start:end]
+
+                # Extract batch data
+                states_batch = states[batch_indices]
+                actions_batch = actions[batch_indices]
+                log_probs_batch = log_probs[batch_indices]
+                advantages_batch = advantages[batch_indices]
+                returns_batch = returns[batch_indices]
+
+                # Get current policy and value predictions
+                policy, value_preds = self.policy_net(states_batch)
+
+                # Compute new log-probabilities for the selected actions
+                new_log_probs = torch.log(policy.gather(1, actions_batch).squeeze())
+
+                # Compute probability ratio
+                ratios = torch.exp(new_log_probs - log_probs_batch)
+
+                # Compute the clipped objective
+                surrogate1 = ratios * advantages_batch
+                surrogate2 = torch.clamp(ratios, 1 - self.epsilon, 1 + self.epsilon) * advantages_batch
+                policy_loss = -torch.mean(torch.min(surrogate1, surrogate2))
+
+                # Compute value loss (MSE)
+                value_loss = torch.mean((returns_batch - value_preds.squeeze()) ** 2)
+
+                # Entropy bonus for exploration
+                entropy = -torch.sum(policy * torch.log(policy + 1e-10), dim=1).mean()
+                entropy_bonus = 0.01 * entropy
+
+                # Total loss
+                total_loss = policy_loss + 0.5 * value_loss - entropy_bonus
+
+                # Update policy network
+                self.optimizer.zero_grad()
+                total_loss.backward()
+                self.optimizer.step()
+
+
+    def train_nobatch(self, trajectories, epochs=10):
         """
         Train the agent using collected trajectories.
 
@@ -99,7 +166,7 @@ class PPOAgent:
         # Compute advantages and returns
         advantages = compute_advantages(rewards, values, dones, self.gamma, self.lam)
         returns = advantages + values
-
+        
         for _ in range(epochs):
             # Get current policy and value predictions
             policy, value_preds = self.policy_net(states)

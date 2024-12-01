@@ -38,7 +38,7 @@ for episode in tqdm(range(1, 10000)):
     trajectories = []
     state, player_id = env.reset()
     done = False
-
+    
     while not env.is_over():
         if player_id == 0: #rule
             action = agents[0].step(state)
@@ -50,13 +50,15 @@ for episode in tqdm(range(1, 10000)):
             done = env.is_over()
             trajectories.append((state['obs'].flatten(), action, reward, log_prob, value, done))
             state = next_state
-
+    buffer.extend(trajectories)
+    # print("number of trajectories:", len(trajectories))
     # Train the agent after collecting trajectories
     #states, actions, rewards, log_probs, values, dones = zip(*trajectories)
        # Train after collecting enough transitions
-    if len(buffer) >= 2048:  # Example: Train after collecting 2048 transitions
-        ppo_agent.train(buffer, batch_size=64)
+    if len(buffer) >= 640:  # Example: Train after collecting 2048 transitions
+        ppo_agent.train(buffer, batch_size=64, epochs=10)
         buffer = []  # Clear the buffer after training
+        # print("------train-------")
 
     if episode % 100 == 0:
         tournament_reward = [[],[]]
