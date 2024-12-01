@@ -16,19 +16,26 @@ from tqdm import tqdm
 state_size = 260  # 5 * 52 matrix flattened
 action_size = 110
 
+total_episode = 20000
+reward_stage2 = 10000
+buffer_size = 640
+batch_size = 64
+epochs = 5
 
 env = rlcard.make('gin-rummy')
 
-
-
-
-ppo_agent = PPOAgent(state_size, action_size)
+ppo_agent = PPOAgent(state_size, 
+                     action_size, 
+                     gamma=0.99, 
+                     lam=0.95, 
+                     epsilon=0.2, 
+                     lr=0.0003)
 
 ## load
-checkpoint_path = './ppo/ppo_agent_episode_18000.pth'
-if os.path.exists(checkpoint_path):
-    print("exist")
-    ppo_agent.load_checkpoint(checkpoint_path)
+# checkpoint_path = './ppo/ppo_agent_episode_18000.pth'
+# if os.path.exists(checkpoint_path):
+#     print("exist")
+#     ppo_agent.load_checkpoint(checkpoint_path)
 
 random = RandomAgent(num_actions=env.num_actions)
 rule = GinRummyNoviceRuleAgent()
@@ -46,7 +53,7 @@ buffer = []
 logger = Logger('./experiments/ppo/')
 
 # Training loop
-for episode in tqdm(range(18001, 30000)):
+for episode in tqdm(range(1, total_episode)):
     # collect data
     trajectories = []
     state, player_id = env.reset()
@@ -59,7 +66,11 @@ for episode in tqdm(range(18001, 30000)):
         else:
             # print(state['obs'], type(state['obs']))
             action, log_prob, value = ppo_agent.select_action(state)
-            next_state, player_id, reward = env.step(action)
+            if episode <= reward_stage2:
+                next_state, player_id, reward = env.step(action)
+            else:
+                next_state, player_id, reward = env.step_2(action)
+            
             done = env.is_over()
             trajectories.append((state['obs'].flatten(), action, reward, log_prob, value, done))
             state = next_state
@@ -68,8 +79,8 @@ for episode in tqdm(range(18001, 30000)):
     # Train the agent after collecting trajectories
     #states, actions, rewards, log_probs, values, dones = zip(*trajectories)
        # Train after collecting enough transitions
-    if len(buffer) >= 640:  # Example: Train after collecting 2048 transitions
-        ppo_agent.train(buffer, batch_size=64, epochs=5)
+    if len(buffer) >= buffer_size:  # Example: Train after collecting 2048 transitions
+        ppo_agent.train(buffer, batch_size=batch_size, epochs=epochs)
         buffer = []  # Clear the buffer after training
         # print("------train-------")
 
@@ -90,7 +101,11 @@ for episode in tqdm(range(18001, 30000)):
                 else:
                     # print(state['obs'], type(state['obs']))
                     action, log_prob, value = ppo_agent.select_action(state)
-                    next_state, player_id, reward = env.step(action)
+                    if episode <= reward_stage2:
+                        next_state, player_id, reward = env.step(action)
+                    else:
+                        next_state, player_id, reward = env.step_2(action)
+
                     tournament_reward[1].append(reward)
                     state = next_state
             winner = env.get_winner()

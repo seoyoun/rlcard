@@ -88,6 +88,32 @@ class Env(object):
         # return self._extract_state(next_state), player_id
         return self._extract_state(next_state), player_id, reward
 
+    def step_2(self, action, raw_action=False):
+        ''' Step forward
+
+        Args:
+            action (int): The action taken by the current player
+            raw_action (boolean): True if the action is a raw action
+
+        Returns:
+            (tuple): Tuple containing:
+
+                (dict): The next state
+                (int): The ID of the next player
+        '''
+        if not raw_action:
+            action = self._decode_action(action)
+
+        self.timestep += 1
+        # Record the action for human interface
+        self.action_recorder.append((self.get_player_id(), action))
+
+        # next_state, player_id = self.game.step(action)
+        next_state, player_id, reward = self.game.step_2(action)
+        # print(next_state, player_id, reward)
+        # return self._extract_state(next_state), player_id
+        return self._extract_state(next_state), player_id, reward
+
     def step_back(self):
         ''' Take one step backward.
 

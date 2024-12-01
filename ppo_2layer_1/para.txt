@@ -1,0 +1,17 @@
+state_size = 260  # 5 * 52 matrix flattened
+action_size = 110
+
+total_episode = 20000
+reward_stage2 = 10000
+buffer_size = 640
+batch_size = 64
+epochs = 5
+
+env = rlcard.make('gin-rummy')
+
+ppo_agent = PPOAgent(state_size, 
+                     action_size, 
+                     gamma=0.99, 
+                     lam=0.95, 
+                     epsilon=0.2, 
+                     lr=0.0003)

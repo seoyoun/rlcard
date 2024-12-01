@@ -267,7 +267,7 @@ def plot_curve_winning(csv_path, save_path, algorithm):
             xs.append(int(row['episode']))
             ys.append(float(row['winning_rate']))
         fig, ax = plt.subplots()
-        ax.plot(xs, ys, label=algorithm)
+        ax.plot(xs, ys, label=algorithm, color='red')
         ax.set(xlabel='episode', ylabel='winning_rate')
         ax.legend()
         ax.grid()

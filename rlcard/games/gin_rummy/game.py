@@ -28,6 +28,7 @@ class GinRummyGame:
         self.actions = None  # type: List[ActionEvent] or None # must reset in init_game
         self.round = None  # round: GinRummyRound or None, must reset in init_game
         self.num_players = 2
+        self.ender = None
 
     def init_game(self):
         ''' Initialize all characters in the game and start round 1
@@ -72,14 +73,68 @@ class GinRummyGame:
             bonus_reward += self._get_reward_dw(current_player)
 
         elif isinstance(action, DeclareDeadHandAction):
+            self.ender = 1
             self.round.declare_dead_hand(action)
             bonus_reward -= 1
         elif isinstance(action, GinAction):
+            self.ender = current_player
             bonus_reward += 1
+            # print("GIN",current_player)
+            self.round.gin(action, going_out_deadwood_count=self.settings.going_out_deadwood_count)
+        elif isinstance(action, KnockAction):
+            self.ender = current_player
+            bonus_reward += 1
+            # print("Knock",current_player)
+            self.round.knock(action)
+        else:
+            raise Exception('Unknown step action={}'.format(action))
+        self.actions.append(action)
+        next_player_id = self.round.current_player_id
+        next_state = self.get_state(player_id=next_player_id)
+
+        # added 
+        # reward = self._get_reward(current_player)
+
+        reward = self._get_reward_melds(current_player)
+        # print("meld reward: ", reward, "bonus:", bonus_reward)
+        reward += bonus_reward
+        # print("total reward: ", reward)
+        return next_state, next_player_id, reward
+
+
+    def step_2(self, action: ActionEvent):
+        ''' Perform game action and return next player number, and the state for next player
+        '''
+        bonus_reward = 0
+        current_player = self.round.current_player_id
+        if isinstance(action, ScoreNorthPlayerAction):
+            self.round.score_player_0(action)
+        elif isinstance(action, ScoreSouthPlayerAction):
+            self.round.score_player_1(action)
+
+
+        elif isinstance(action, DrawCardAction):
+            self.round.draw_card(action)
+            # print("draw card")
+        elif isinstance(action, PickUpDiscardAction):
+            self.round.pick_up_discard(action)
+            # print("draw card - known")
+
+
+        elif isinstance(action, DiscardAction):
+            self.round.discard(action)
+            # print("discard")
+            bonus_reward += self._get_reward_dw(current_player)
+
+        elif isinstance(action, DeclareDeadHandAction):
+            self.round.declare_dead_hand(action)
+            bonus_reward -= 2
+        elif isinstance(action, GinAction):
+            bonus_reward += 2
             # print("GIN")
             self.round.gin(action, going_out_deadwood_count=self.settings.going_out_deadwood_count)
         elif isinstance(action, KnockAction):
-            bonus_reward += 1
+            bonus_reward += 2
             # print("Knock")
             self.round.knock(action)
         else:

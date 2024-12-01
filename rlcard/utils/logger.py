@@ -9,11 +9,11 @@ class Logger:
         self.fig_path = os.path.join(log_dir, 'performance.png')
         self.fig_win_path = os.path.join(log_dir, 'performance_win.png')
         self.file = open(self.csv_path, 'w', newline='')  # Ensure newline='' for CSVs
-        self.writer = csv.DictWriter(self.file, fieldnames=['episode', 'reward', 'winning rate'])
+        self.writer = csv.DictWriter(self.file, fieldnames=['episode', 'reward', 'winning_rate'])
         self.writer.writeheader()  # Write the header at initialization
 
-    def log_performance(self, episode, reward, wining_rate):
-        self.writer.writerow({'episode': episode, 'reward': reward, "winning_rate": wining_rate})
+    def log_performance(self, episode, reward, winning_rate):
+        self.writer.writerow({'episode': episode, 'reward': reward, "winning_rate": winning_rate})
         self.file.flush()  # Ensure data is written to disk
 
     def close(self):
