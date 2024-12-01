@@ -102,6 +102,19 @@ class GinRummyEnv(Env):
         legal_actions_ids = {action_event.action_id: None for action_event in legal_actions}
         return OrderedDict(legal_actions_ids)
     
+    def get_winner(self):
+
+        player_0_deadwood = self.game.round.players[0].get_deadwood_count()
+        player_1_deadwood = self.game.round.players[1].get_deadwood_count()
+
+
+        if player_0_deadwood < player_1_deadwood:
+
+            return 0
+        else:
+            return 1
+
+
     # #added
     # def _get_rewards(self):
     #     ''' Compute dense rewards for the current game state.

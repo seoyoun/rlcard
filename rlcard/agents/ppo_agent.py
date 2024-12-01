@@ -197,11 +197,43 @@ class PPOAgent:
             total_loss.backward()
             self.optimizer.step()
 
+
+    def save_checkpoint(self, filepath):
+        """
+        Save the agent's state to a file.
+
+        Args:
+            filepath (str): Path to save the checkpoint.
+        """
+        torch.save({
+            'policy_net_state_dict': self.policy_net.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+        }, filepath)
+        print(f"Checkpoint saved to {filepath}")
+
+    def load_checkpoint(self, filepath):
+        """
+        Load the agent's state from a file.
+
+        Args:
+            filepath (str): Path to load the checkpoint from.
+        """
+        checkpoint = torch.load(filepath)
+        self.policy_net.load_state_dict(checkpoint['policy_net_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        print(f"Checkpoint loaded from {filepath}")
+
 class PPOPolicy(nn.Module):
     def __init__(self, state_size, action_size):
         super(PPOPolicy, self).__init__()
         self.fc1 = nn.Linear(state_size, 128)
         self.fc2 = nn.Linear(128, 64)
+
+        # self.fc1 = nn.Linear(state_size, 256)
+        # self.fc2 = nn.Linear(256, 128)
+        # self.fc3 = nn.Linear(128, 64)
+
+
         self.policy_head = nn.Linear(64, action_size)
         self.value_head = nn.Linear(64, 1)
         self.relu = nn.ReLU()
@@ -210,6 +242,7 @@ class PPOPolicy(nn.Module):
     def forward(self, state):
         x = self.relu(self.fc1(state))
         x = self.relu(self.fc2(x))
+        # x = self.relu(self.fc3(x))
         policy = self.softmax(self.policy_head(x))  # Probabilities
         value = self.value_head(x)  # State value
         return policy, value

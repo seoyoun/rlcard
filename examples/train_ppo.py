@@ -1,8 +1,9 @@
+import os
 import numpy as np
 import rlcard
 from rlcard.agents import DQNAgent, RandomAgent
 from rlcard.agents.ppo_agent import PPOAgent
-from rlcard.utils import set_seed, tournament, reorganize, Logger, plot_curve
+from rlcard.utils import set_seed, tournament, reorganize, Logger, plot_curve, plot_curve_winning
 import time
 # from rlcard.envs.dense_reward_gin_rummy import GinRummyDenseRewardEnv  # Import your custom environment
 
@@ -18,7 +19,17 @@ action_size = 110
 
 env = rlcard.make('gin-rummy')
 
+
+
+
 ppo_agent = PPOAgent(state_size, action_size)
+
+## load
+checkpoint_path = './ppo/ppo_agent_episode_18000.pth'
+if os.path.exists(checkpoint_path):
+    print("exist")
+    ppo_agent.load_checkpoint(checkpoint_path)
+
 random = RandomAgent(num_actions=env.num_actions)
 rule = GinRummyNoviceRuleAgent()
 agents = [
@@ -27,13 +38,15 @@ agents = [
 ]
 env.set_agents(agents)
 
+
+
 # Replay buffer to store multiple trajectories
 buffer = []
 
 logger = Logger('./experiments/ppo/')
 
 # Training loop
-for episode in tqdm(range(1, 10000)):
+for episode in tqdm(range(18001, 30000)):
     # collect data
     trajectories = []
     state, player_id = env.reset()
@@ -56,11 +69,16 @@ for episode in tqdm(range(1, 10000)):
     #states, actions, rewards, log_probs, values, dones = zip(*trajectories)
        # Train after collecting enough transitions
     if len(buffer) >= 640:  # Example: Train after collecting 2048 transitions
-        ppo_agent.train(buffer, batch_size=64, epochs=10)
+        ppo_agent.train(buffer, batch_size=64, epochs=5)
         buffer = []  # Clear the buffer after training
         # print("------train-------")
 
     if episode % 100 == 0:
+
+        checkpoint_path = f'./ppo/ppo_agent_episode_{episode}.pth'
+        ppo_agent.save_checkpoint(checkpoint_path)
+
+        winning_rate = 0
         tournament_reward = [[],[]]
         for i in range(100):
             state, player_id = env.reset()
@@ -75,15 +93,21 @@ for episode in tqdm(range(1, 10000)):
                     next_state, player_id, reward = env.step(action)
                     tournament_reward[1].append(reward)
                     state = next_state
+            winner = env.get_winner()
+            # print("winner:", winner)
+            winning_rate += winner
+        winning_rate /= 100
+        # print("winning rate:", winning_rate)
         tournament_reward = [np.mean(tournament_reward[0]),np.mean(tournament_reward[1])]
-        print(f"Episode {episode}: Tournament Reward = {tournament_reward[1]}")
+        print(f"Episode {episode}: Tournament Reward = {tournament_reward[1]} Winning = {winning_rate}")
 
 
 
-        logger.log_performance(episode, tournament_reward[1])
+        logger.log_performance(episode, tournament_reward[1], winning_rate)
         # print("0----------------------0")
 
 
 
 logger.close()
 plot_curve(logger.csv_path, logger.fig_path, 'PPO')
+plot_curve_winning(logger.csv_path, logger.fig_win_path, 'PPO')
