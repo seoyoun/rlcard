@@ -113,7 +113,8 @@ class GinRummyEnv(Env):
             return 0
         else:
             return 1
-
+    def get_ender(self):
+        return self.game.ender
 
     # #added
     # def _get_rewards(self):
