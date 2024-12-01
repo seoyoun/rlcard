@@ -28,7 +28,7 @@ class GinRummyGame:
         self.actions = None  # type: List[ActionEvent] or None # must reset in init_game
         self.round = None  # round: GinRummyRound or None, must reset in init_game
         self.num_players = 2
-        self.ender = None
+        # self.ender = None
 
     def init_game(self):
         ''' Initialize all characters in the game and start round 1
@@ -73,16 +73,16 @@ class GinRummyGame:
             bonus_reward += self._get_reward_dw(current_player)
 
         elif isinstance(action, DeclareDeadHandAction):
-            self.ender = 1
+            # self.ender = 1
             self.round.declare_dead_hand(action)
             bonus_reward -= 1
         elif isinstance(action, GinAction):
-            self.ender = current_player
+            # self.ender = current_player
             bonus_reward += 1
             # print("GIN",current_player)
             self.round.gin(action, going_out_deadwood_count=self.settings.going_out_deadwood_count)
         elif isinstance(action, KnockAction):
-            self.ender = current_player
+            # self.ender = current_player
             bonus_reward += 1
             # print("Knock",current_player)
             self.round.knock(action)
